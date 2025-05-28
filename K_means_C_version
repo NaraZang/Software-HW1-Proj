@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#define INFINITY 1e9 // Define a large value for infinity
 
 /**
   Declaring Functions :
@@ -10,6 +11,7 @@ float** initialize_centroids(float** points, int K, int d);
 float** load_points();
 float dist(float* p , float* q, int d);
 void print_centroids(float **Centroids, int K, int d);
+int* assign_clusters(float** points, float** centroids, int K, int d);
 
 
 
@@ -49,16 +51,16 @@ float** load_points(){
     /*
     The function that allocates the memory is not necessarily the one that frees it — 
     but someone must take responsibility to free it once and only once, when it’s no longer needed.
-    */
+    
     for (int i = 0; i < K; i++) {
         free(points[i]);
     }
     free(points);
-
+*/
     return 0;
     
 }
-float** initialize_centroids(float** points, int K, int d) {
+float** initialize_centroids(float** points, int K, int d, int N) {
     float **copy = malloc(K * sizeof(float*));
 
     for (int i = 0; i < K; i++) {
@@ -88,7 +90,26 @@ void print_centroids(float **Centroids, int K, int d){
         printf("\n");
     }
 }
-
+int* assign_clusters(float** points, float** centroids, int K, int d){
+    int* cluster_indices = malloc(K * sizeof(int));
+    if (!cluster_indices) { // If malloc fails and returns NULL, we handle it and exit
+        perror("malloc failed");
+        exit(1);
+    }
+    for (int i=0 ; i< N ; i++){
+        float min_dist = INFINITY;
+        int min_index = -1; // check if better to name closest_centroid 
+        for(int j = 0; j < K; j++) {
+            float distance = dist(points[i], centroids[j], d);
+            if (distance < min_dist) {
+                min_dist = distance;
+                min_index = j;
+            }
+        }
+        cluster_indices[i] = min_index; // Assign the closest centroid index to the point
+    }
+    return cluster_indices;
+}
 
 
 
