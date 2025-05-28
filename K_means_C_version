@@ -1,0 +1,126 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#define INFINITY 1e9 // Define a large value for infinity
+
+/**
+  Declaring Functions :
+ */  
+
+float** initialize_centroids(float** points, int K, int d, int N);
+float** load_points();
+float dist(float* p , float* q, int d);
+void print_centroids(float **Centroids, int K, int d);
+int* assign_clusters(float** points, float** centroids, int K, int d, int N);
+int has_converged(float** old_centroids, float** new_centroids, int K, int d, float epsilon);
+
+
+
+
+int main() {}
+float** load_points(){
+     int K, d;
+    scanf("%d %d", &K, &d); // Read number of points and dimensions
+
+    // Allocate 2D array
+    float **points = malloc(K * sizeof(float*));
+    if (!points) {  /*If malloc fails and returns NULL, we handle it and exit*/
+        perror("malloc failed");
+        exit(1);
+    }
+
+    for (int i = 0; i < K; i++) {
+        points[i] = malloc(d * sizeof(float));
+        if (!points[i]) { //If malloc fails and returns NULL, we handle it and exit
+            perror("malloc failed");
+            exit(1);
+        }
+        for (int j = 0; j < d; j++) {
+            scanf("%f", &points[i][j]); // Read a float into the array
+        }
+    }
+
+    // Example: print the points - could delete later
+    for (int i = 0; i < K; i++) {
+        for (int j = 0; j < d; j++) {
+            printf("%.4f ", points[i][j]);
+        }
+        printf("\n");
+    }
+
+    // Free memory
+    /*
+    The function that allocates the memory is not necessarily the one that frees it — 
+    but someone must take responsibility to free it once and only once, when it’s no longer needed.
+    
+    for (int i = 0; i < K; i++) {
+        free(points[i]);
+    }
+    free(points);
+*/
+    return 0;
+    
+}
+float** initialize_centroids(float** points, int K, int d, int N) {
+    float **copy = malloc(K * sizeof(float*));
+
+    for (int i = 0; i < K; i++) {
+        copy[i] = malloc(d * sizeof(float));
+        for (int j = 0; j < d; j++) {
+            copy[i][j] = points[i][j];
+        }
+    }
+
+    return copy;
+}
+float dist(float* p, float* q , int d) {
+    float sum = 0.0;
+    for (int i = 0; i < d; i++) { 
+        float diff = p[i] - q[i];
+        sum += diff * diff;
+    }
+    return sqrt(sum);
+}
+void print_centroids(float **Centroids, int K, int d){
+    for (int i = 0; i < K; i++) {
+        for (int j = 0; j < d; j++) {
+            printf("%.4f", Centroids[i][j]);
+            if (j < d - 1)
+                printf(","); // Add comma between values
+        }
+        printf("\n");
+    }
+}
+int* assign_clusters(float** points, float** centroids, int K, int d, int N){
+    int* cluster_indices = malloc(K * sizeof(int));
+    if (!cluster_indices) { // If malloc fails and returns NULL, we handle it and exit
+        perror("malloc failed");
+        exit(1);
+    }
+    for (int i=0 ; i< N ; i++){
+        float min_dist = INFINITY;
+        int min_index = -1; // check if better to name closest_centroid 
+        for(int j = 0; j < K; j++) {
+            float distance = dist(points[i], centroids[j], d);
+            if (distance < min_dist) {
+                min_dist = distance;
+                min_index = j;
+            }
+        }
+        cluster_indices[i] = min_index; // Assign the closest centroid index to the point
+    }
+    return cluster_indices;
+}
+int has_converged(float** old_centroids, float** new_centroids, int K, int d, float epsilon){
+    for (int i = 0; i < K; i++) {
+        float distance = dist(old_centroids[i], new_centroids[i], d);
+        if (distance >= epsilon) { //check if it should be greater or (greater or equal)
+            return 0; // Not converged
+        }
+    }
+    return 1; // Converged
+    // in this case 1 returns true and 0 returns false
+}
+
+
+
