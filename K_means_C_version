@@ -8,7 +8,7 @@
  */  
 
 float** initialize_centroids(float** points, int K, int d, int N);
-float** load_points(int* N_out, int* d_out);
+float** load_points(const char* filename, int* N_out, int* d_out);
 float dist(float* p , float* q, int d);
 void print_centroids(float **Centroids, int K, int d);
 int* assign_clusters(float** points, float** centroids, int K, int d, int N);
@@ -18,33 +18,78 @@ float** create_zero_centroids(int k, int d); //helper function Not used directly
 
 
 
-int main() {}
-float** load_points(int* N_out, int* d_out) { //updated 
-    int N, d;
-    scanf("%d %d", &N, &d); // Read number of points and dimensions
+float** load_points(const char* filename, int* N_out, int* d_out) { //updated Temporarily reading from file
+    FILE* fp = fopen(filename, "r");
+    if (!fp) {
+        perror("File open failed");
+        exit(1);
+    }
 
-    *N_out = N; // Set the values via the output parameters
-    *d_out = d;
+    char line[MAX_LINE_LEN];   // Buffer for reading each line
+    int capacity = 10;         // Initial capacity for number of points
+    int N = 0;                 // Actual number of points read
+    int d = -1;                // Number of dimensions (to be determined)
 
-    // Allocate 2D array
-    float **points = malloc(N * sizeof(float*));
+    // Allocate initial array of point pointers
+    float** points = malloc(capacity * sizeof(float*));
     if (!points) {
         perror("malloc failed");
         exit(1);
     }
 
-    for (int i = 0; i < N; i++) {
-        points[i] = malloc(d * sizeof(float));
-        if (!points[i]) {
+    // Read each line from the file
+    while (fgets(line, MAX_LINE_LEN, fp)) {
+        // Resize array if needed
+        if (N >= capacity) {
+            capacity *= 2;
+            points = realloc(points, capacity * sizeof(float*));
+            if (!points) {
+                perror("realloc failed");
+                exit(1);
+            }
+        }
+
+        // Count how many numbers (dimensions) are in the line
+        int curr_d = 0;
+        char* tmp = strdup(line);  // Make a copy of the line to tokenize safely
+        char* token = strtok(tmp, " \t\n");
+        while (token) {
+            curr_d++;
+            token = strtok(NULL, " \t\n");
+        }
+        free(tmp);
+
+        // Check consistency of dimension count
+        if (d == -1) {
+            d = curr_d;  // First line sets the dimensionality
+        } else if (curr_d != d) {
+            fprintf(stderr, "Inconsistent number of dimensions in line %d\n", N + 1);
+            exit(1);
+        }
+
+        // Allocate memory for this point
+        points[N] = malloc(d * sizeof(float));
+        if (!points[N]) {
             perror("malloc failed");
             exit(1);
         }
-        for (int j = 0; j < d; j++) {
-            scanf("%f", &points[i][j]); // Read floats into the array
+
+        // Parse and store the float values
+        int i = 0;
+        token = strtok(line, " \t\n");
+        while (token && i < d) {
+            points[N][i++] = atof(token);
+            token = strtok(NULL, " \t\n");
         }
+
+        N++;  // One more point loaded
     }
 
-    return points; // Return the array
+    fclose(fp);  // Close the file
+
+    // Set output values
+    *N_out = N;
+    *d_out = d;
 
     // Example: print the points - could delete later
     for (int i = 0; i < N; i++) {
@@ -53,6 +98,7 @@ float** load_points(int* N_out, int* d_out) { //updated
         }
         printf("\n");
     }
+    return points; // Return the array 
 
     // Free memory
     /*
@@ -63,7 +109,8 @@ float** load_points(int* N_out, int* d_out) { //updated
         free(points[i]);
     }
     free(points);
-*/ }
+*/ 
+}
 float** initialize_centroids(float** points, int K, int d, int N) {
     float **copy = malloc(K * sizeof(float*));
 
@@ -159,11 +206,11 @@ int has_converged(float** old_centroids, float** new_centroids, int K, int d, fl
     return 1; // Converged
     // in this case 1 returns true and 0 returns false
 }
-void k_means(int K, int iter) {
+void k_means(const char* filename, int K, int iter) { //temporarily reading ftom file
     double epsilon = 0.001;
     int N, dim;
 
-    float **points = load_points(&N, &dim); //update load points
+    float **points = load_points(filename,&N, &dim); //update load points
     if (!(1 < K && K < N)) {
         fprintf(stderr, "Invalid number of clusters!\n");
         exit(1);
