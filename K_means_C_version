@@ -13,32 +13,38 @@ float dist(float* p , float* q, int d);
 void print_centroids(float **Centroids, int K, int d);
 int* assign_clusters(float** points, float** centroids, int K, int d, int N);
 int has_converged(float** old_centroids, float** new_centroids, int K, int d, float epsilon);
-
+float** update_centroids(float** points, int* cluster_indices, int num_points, int K, int dim);
+float** create_zero_centroids(int k, int d); //helper function Not used directly in K means
 
 
 
 int main() {}
-float** load_points(){
-     int K, d;
-    scanf("%d %d", &K, &d); // Read number of points and dimensions
+float** load_points(int* N_out, int* d_out, int K) { //updated 
+    int N, d;
+    scanf("%d %d", &N, &d); // Read number of points and dimensions
+
+    *N_out = N; // Set the values via the output parameters
+    *d_out = d;
 
     // Allocate 2D array
     float **points = malloc(K * sizeof(float*));
-    if (!points) {  /*If malloc fails and returns NULL, we handle it and exit*/
+    if (!points) {
         perror("malloc failed");
         exit(1);
     }
 
     for (int i = 0; i < K; i++) {
         points[i] = malloc(d * sizeof(float));
-        if (!points[i]) { //If malloc fails and returns NULL, we handle it and exit
+        if (!points[i]) {
             perror("malloc failed");
             exit(1);
         }
         for (int j = 0; j < d; j++) {
-            scanf("%f", &points[i][j]); // Read a float into the array
+            scanf("%f", &points[i][j]); // Read floats into the array
         }
     }
+
+    return points; // Return the array
 
     // Example: print the points - could delete later
     for (int i = 0; i < K; i++) {
@@ -57,10 +63,7 @@ float** load_points(){
         free(points[i]);
     }
     free(points);
-*/
-    return 0;
-    
-}
+*/ }
 float** initialize_centroids(float** points, int K, int d, int N) {
     float **copy = malloc(K * sizeof(float*));
 
@@ -111,6 +114,41 @@ int* assign_clusters(float** points, float** centroids, int K, int d, int N){
     }
     return cluster_indices;
 }
+
+float** update_centroids(float** points, int* cluster_indices, int K, int d, int N) {
+    float** new_centroids=create_zero_centroids(K,dim); //creating an empty (0.0) list of lists that each inner list of size dim
+    int* counts = calloc(K, sizeof(int)); //allocating memory to count the number of points for each centroid
+    for (i=0; i<N; i++) { //SHOULD FIX THIS, AND PASS N AS AN ARG TO THE FUNCTION ITSELF
+        int cluster = cluster_indices[i];
+        for (int d = 0; d < dim; d++) {
+            new_centroids[cluster][d] += points[i][d];}
+        counts[cluster] += 1;
+    }
+    for (int j = 0; j < K; j++) {
+        if (counts[j] == 0) {
+            continue;  // Avoid division by zero 
+        }
+        for (int d = 0; d < dim; d++) {
+            new_centroids[j][d] /= counts[j];  // Average each dimension
+            }
+    }
+}
+// helper function,used to create an empty (0.0) list of lists that each inner list of size dim, namely new centroids
+
+float** create_zero_centroids(int k, int d) { 
+    float** centroids = malloc(k * sizeof(float*)); //allocates memory for K pointers to float,These pointers will each point to the start of a row.
+    if (!centroids) {
+        perror("malloc failed for centroids");
+        return NULL;} 
+    float* data = calloc(k * d, sizeof(float)); // zero-initializes all floats, uses calloc to allocate and initialize all bytes to zero.
+    if (!data) {
+        perror("calloc failed for data");
+        free(centroids);
+        return NULL; }
+    for (int i = 0; i <k; i++) {
+    centroids[i] = data + i * d; } //each elem in centroids is a pointer to a 0.0 float in data,Sets centroids[i] (the pointer to row i) to point to the ith chunk of dim floats inside the big block.
+    return centroids; }
+
 int has_converged(float** old_centroids, float** new_centroids, int K, int d, float epsilon){
     for (int i = 0; i < K; i++) {
         float distance = dist(old_centroids[i], new_centroids[i], d);
@@ -121,6 +159,48 @@ int has_converged(float** old_centroids, float** new_centroids, int K, int d, fl
     return 1; // Converged
     // in this case 1 returns true and 0 returns false
 }
+void k_means(int K, int iter) {
+    double epsilon = 0.001;
+    int N, dim;
+
+    float **points = load_points(&N, &dim, K); //update load points
+    if (!(1 < K && K < N)) {
+        fprintf(stderr, "Invalid number of clusters!\n");
+        exit(1);
+    }
+    if (!(1 < iter && iter < 1000)) {
+        fprintf(stderr, "Invalid maximum iteration!\n");
+        exit(1);
+    }
+
+    float **centroids = initialize_centroids(points, K, N, dim);
+    int *cluster_indices;
+    float **new_centroids;
+    int i;
+
+    for (i = 0; i < iter; i++) {
+        cluster_indices = assign_clusters(points, centroids, K, dim, N);
+        new_centroids = update_centroids(points, cluster_indices, K, dim, N);
+
+        if (has_converged(centroids, new_centroids, K, dim, epsilon)) {
+            break;
+        }
+
+        centroids = new_centroids;
+
+        print_centroids(centroids, K, dim);
+    }
+    // TODO: free allocated memory here
+}
+void k_means_default(int K) { //MAYBE CORRECTED!!
+    k_means(K, 400);  // call with default iter = 400
+}
+
+
+
+        
+        
+
 
 
 
