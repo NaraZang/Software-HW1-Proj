@@ -8,7 +8,7 @@
  */  
 
 float** initialize_centroids(float** points, int K, int d, int N);
-float** load_points();
+float** load_points(int* N_out, int* d_out);
 float dist(float* p , float* q, int d);
 void print_centroids(float **Centroids, int K, int d);
 int* assign_clusters(float** points, float** centroids, int K, int d, int N);
@@ -19,7 +19,7 @@ float** create_zero_centroids(int k, int d); //helper function Not used directly
 
 
 int main() {}
-float** load_points(int* N_out, int* d_out, int K) { //updated 
+float** load_points(int* N_out, int* d_out) { //updated 
     int N, d;
     scanf("%d %d", &N, &d); // Read number of points and dimensions
 
@@ -27,13 +27,13 @@ float** load_points(int* N_out, int* d_out, int K) { //updated
     *d_out = d;
 
     // Allocate 2D array
-    float **points = malloc(K * sizeof(float*));
+    float **points = malloc(N * sizeof(float*));
     if (!points) {
         perror("malloc failed");
         exit(1);
     }
 
-    for (int i = 0; i < K; i++) {
+    for (int i = 0; i < N; i++) {
         points[i] = malloc(d * sizeof(float));
         if (!points[i]) {
             perror("malloc failed");
