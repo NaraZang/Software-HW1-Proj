@@ -1,7 +1,10 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#define INFINITY 1e9 // Define a large value for infinity
+#include <string.h>
+#define MAX_LINE_LEN 1024
+
 
 /**
   Declaring Functions :
@@ -91,13 +94,13 @@ float** load_points(const char* filename, int* N_out, int* d_out) { //updated Te
     *N_out = N;
     *d_out = d;
 
-    // Example: print the points - could delete later
+    /*// Example: print the points - could delete later
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < d; j++) {
             printf("%.4f ", points[i][j]);
         }
         printf("\n");
-    }
+    }*/
     return points; // Return the array 
 
     // Free memory
@@ -165,7 +168,7 @@ int* assign_clusters(float** points, float** centroids, int K, int d, int N){
 float** update_centroids(float** points, int* cluster_indices, int K, int d, int N) {
     float** new_centroids=create_zero_centroids(K,d); //creating an empty (0.0) list of lists that each inner list of size dim
     int* counts = calloc(K, sizeof(int)); //allocating memory to count the number of points for each centroid
-    for (i=0; i<N; i++) { 
+    for (int i=0; i<N; i++) { 
         int cluster = cluster_indices[i]; // cluster is the index of the centroid to which the point belongs
         for (int s = 0; s < d; s++) {
             new_centroids[cluster][s] += points[i][s];} // Add the point's coordinates to the corresponding centroid - calculating the new centroid
@@ -179,6 +182,8 @@ float** update_centroids(float** points, int* cluster_indices, int K, int d, int
             new_centroids[j][s] /= counts[j];  // Average each dimension
             }
     }
+    free(counts);
+
     return new_centroids; // Return the new centroids
 }
 
@@ -228,23 +233,59 @@ void k_means(const char* filename, int K, int iter) { //temporarily reading ftom
     float **new_centroids;
     int i;
 
-    for (i = 0; i < iter; i++) {
-        cluster_indices = assign_clusters(points, centroids, K, dim, N);
-        new_centroids = update_centroids(points, cluster_indices, K, dim, N);
+for (i = 0; i < iter; i++) {
+    cluster_indices = assign_clusters(points, centroids, K, dim, N);
+    new_centroids = update_centroids(points, cluster_indices, K, dim, N);
 
-        if (has_converged(centroids, new_centroids, K, dim, epsilon)) {
-            break;
-        }
-
-        centroids = new_centroids;
-
-        print_centroids(centroids, K, dim);
+    if (has_converged(centroids, new_centroids, K, dim, epsilon)) {
+        // free cluster_indices (not needed anymore)
+        free(cluster_indices);
+        break;
     }
-    // TODO: free allocated memory here
+
+    // free cluster_indices from this iteration
+    free(cluster_indices);
+
+    // free old centroids
+    for (int i = 0; i < K; i++) {
+        free(centroids[i]);
+    }
+    free(centroids);
+
+    centroids = new_centroids;
+
+    print_centroids(centroids, K, dim);
 }
-void k_means_default(int K) { //MAYBE CORRECTED!!
-    k_means(K, 400);  // call with default iter = 400
+
+    // Free centroids (the final one)
+    for (int i = 0; i < K; i++) {
+        free(centroids[i]);
+    }
+    free(centroids);
+
+    // Free points
+    for (int i = 0; i < N; i++) {
+        free(points[i]);
+    }
+    free(points);
+
 }
+
+int main(int argc, char* argv[]) {
+    if (argc != 3 && argc != 4) {
+        fprintf(stderr, "Usage: %s <input_file> <K> [max_iter]\n", argv[0]);
+        return 1;
+    }
+
+    const char* filename = argv[1];
+    int K = atoi(argv[2]);
+    int iter = (argc == 4) ? atoi(argv[3]) : 400;  // default to 400
+
+    k_means(filename, K, iter);
+
+    return 0;
+}
+
 
 
 
