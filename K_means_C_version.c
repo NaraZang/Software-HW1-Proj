@@ -142,7 +142,7 @@ void print_centroids(float **Centroids, int K, int d){
     }
 }
 int* assign_clusters(float** points, float** centroids, int K, int d, int N){
-    int* cluster_indices = malloc(K * sizeof(int));
+    int* cluster_indices = malloc(N * sizeof(int));  // ← correct size
     if (!cluster_indices) { // If malloc fails and returns NULL, we handle it and exit
         perror("malloc failed");
         exit(1);
@@ -163,24 +163,27 @@ int* assign_clusters(float** points, float** centroids, int K, int d, int N){
 }
 
 float** update_centroids(float** points, int* cluster_indices, int K, int d, int N) {
-    float** new_centroids=create_zero_centroids(K,dim); //creating an empty (0.0) list of lists that each inner list of size dim
+    float** new_centroids=create_zero_centroids(K,d); //creating an empty (0.0) list of lists that each inner list of size dim
     int* counts = calloc(K, sizeof(int)); //allocating memory to count the number of points for each centroid
-    for (i=0; i<N; i++) { //SHOULD FIX THIS, AND PASS N AS AN ARG TO THE FUNCTION ITSELF
-        int cluster = cluster_indices[i];
-        for (int d = 0; d < dim; d++) {
-            new_centroids[cluster][d] += points[i][d];}
-        counts[cluster] += 1;
+    for (i=0; i<N; i++) { 
+        int cluster = cluster_indices[i]; // cluster is the index of the centroid to which the point belongs
+        for (int s = 0; s < d; s++) {
+            new_centroids[cluster][s] += points[i][s];} // Add the point's coordinates to the corresponding centroid - calculating the new centroid
+        counts[cluster] += 1; // Increment the count for this centroid
     }
     for (int j = 0; j < K; j++) {
         if (counts[j] == 0) {
             continue;  // Avoid division by zero 
         }
-        for (int d = 0; d < dim; d++) {
-            new_centroids[j][d] /= counts[j];  // Average each dimension
+        for (int s = 0; s < d; s++) {
+            new_centroids[j][s] /= counts[j];  // Average each dimension
             }
     }
+    return new_centroids; // Return the new centroids
 }
-// helper function,used to create an empty (0.0) list of lists that each inner list of size dim, namely new centroids
+
+
+//create_zero_centroides is a helper function,used to create an empty (0.0) list of lists that each inner list of size d, namely new centroids
 
 float** create_zero_centroids(int k, int d) { 
     float** centroids = malloc(k * sizeof(float*)); //allocates memory for K pointers to float,These pointers will each point to the start of a row.
